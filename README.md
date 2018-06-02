@@ -1,6 +1,6 @@
 # RustBetterVanilla
 
-Very old project about improving vanilla's gameplay in Rust  
+Very old project about improving vanilla's gameplay in Rust (it may not be updated anymore, i just keep it here just in case/as C# reminder) 
 #MakeRustGreatAgain  
 
 ##Goals :  
