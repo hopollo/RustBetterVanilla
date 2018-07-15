@@ -3,7 +3,8 @@
 Very old project about improving vanilla's gameplay in Rust (it may not be updated anymore, i just keep it here just in case/as C# reminder) 
 #MakeRustGreatAgain  
 
-##Goals :  
+##Goals : 
+- Remove dots to recognize friends
 - Remove weapons/items/armor skins (wears only)
 - Focus on server optimisation/game performance
 - Nerf offline raiding
