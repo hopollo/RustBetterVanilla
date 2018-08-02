@@ -5,6 +5,7 @@ Very old project about improving vanilla's gameplay in Rust (it may not be updat
 
 ##Goals : 
 - Remove dots to recognize friends
+- Remove integrated map
 - Remove weapons/items/armor skins (wears only)
 - Focus on server optimisation/game performance
 - Nerf offline raiding
