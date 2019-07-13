@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using Rust;
 using System.Collections.Generic;
 using ConVar;
 using UnityEngine;
 
 // TODO : ADD possibility to remove Campfire as same as Lantern new system with Hammer
-	// TODO : Put back F1 grenade damage on buildings
+// TODO : Put back F1 grenade damage on buildings
 
 namespace Oxide.Plugins
 {
@@ -14,7 +14,7 @@ namespace Oxide.Plugins
 	{
 		public int Chance;
 		public int Random;
-		public bool DebugMode = false;
+		public bool DebugMode = true;
 		public bool NightAllowed = true;
 		public bool InstaCraft = false;
 		public bool HalfCraft = true;
@@ -35,12 +35,12 @@ namespace Oxide.Plugins
 
 		private readonly Dictionary<int, int> _whatToTransform = new Dictionary<int, int>()
 		{
-			{-1059362949, 688032252}, // Metal Ore -> Metal Fragments
-			{2133577942, 374890416}, // High Quality Metal Ore -> High Quality Metal
-			{889398893, -891243783}, // Sulfur Ore -> Sulfur
+			{-4031221, 69511070}, // Metal Ore -> Metal Fragments
+			{-1982036270, -4031221}, // High Quality Metal Ore -> High Quality Metal
+			{-1157596551, -1581843485}, // Sulfur Ore -> Sulfur
 		};
 
-		private readonly  List<string> _itemWithoutConditionLoss = new List<string>()
+		private readonly List<string> _itemWithoutConditionLoss = new List<string>()
 		{
 			"rifle.ak",
 			"pistol.semiauto",
@@ -106,6 +106,7 @@ namespace Oxide.Plugins
 		private void DisableAnimals()
 		{
 			if (AnimalsIa) return;
+			Puts("Animals disabled");
 			AI.think = false;
 			AI.move = false;
 		}
@@ -148,7 +149,7 @@ namespace Oxide.Plugins
 
 		private void OnPlayerAttack(BasePlayer attacker, HitInfo info)
 		{
-			//Debug("OnPlayerAttack works!");
+			Debug("OnPlayerAttack works!");
 
 			if (attacker == null || info == null) return;
 
@@ -178,11 +179,10 @@ namespace Oxide.Plugins
 		private void OnEntityTakeDamage(BaseCombatEntity entity, HitInfo info)
 		{	
 			// TODO : Add Hit sound when player is hurt ! (not cold)
-
-			Debug($"OnEntityTakeDamage : {info?.Initiator?.ShortPrefabName}");
+			if (entity == null) return;
+			//if (info?.Initiator?.ShortPrefabName != null) Debug($"OnEntityTakeDamage : {info?.Initiator?.ShortPrefabName}");
 
 			//TODO : Assign damage only if block || entity is backward
-			if (entity == null) return;
 			if (info == null) return;
 
 			var damage = info.damageTypes.GetMajorityDamageType();
@@ -216,13 +216,13 @@ namespace Oxide.Plugins
 			};
 			
 			if ((block.currentGrade.gradeBase.name.Contains("wood") && weapon.Contains("bow_hunting.entity")) ||
-				weapon.Contains("crossbow.entity"))
+				weapon.Contains("crossbow.entity"));
 			{
 				info.damageTypes.Add(DamageType.Decay, 1f);
 			}
 
 			if (arrowRaidAvailable.Contains(entityName) && weapon.Contains("bow_hunting.entity") ||
-				weapon.Contains("crossbow.entity"))
+				weapon.Contains("crossbow.entity"));
 			{
 				Debug($"Entity found : {entityName} Hp : {entity.health}");
 				info.damageTypes.Add(DamageType.Decay, 1f);
@@ -460,37 +460,37 @@ namespace Oxide.Plugins
 
 		private void OnDispenserGather(ResourceDispenser dispenser, BaseEntity entity, Item item)
 		{
-			//Debug("OnDispenserGather works!");
-
-			var player = entity.ToPlayer();
-
-			if (dispenser.gatherType != ResourceDispenser.GatherType.Tree) return;
-				OnPlayerGatherTree(player, item);
+			Debug($"Hitted Dispenser : ({dispenser.gatherType})");
+			
+			switch (dispenser.gatherType) {
+				case ResourceDispenser.GatherType.Tree :
+					OnPlayerGatherTree(entity.ToPlayer(), item);
+					break;
+			}
 		}
 
 		private void OnCollectiblePickup(Item item, BasePlayer player)
 		{
 			Debug($"OnCollectiblePickup works! ({item.info.displayName.english} - {item.info.itemid})");
 
-			if (item.info.itemid == 3655341)
-			{
-				const int charcoalId = 1436001773;
-				var amountCharcoal = (item.amount/10);
+			switch (item.info.itemid) {
+				case -151838493:
+					const int charcoalId = -1938052175;
+					var amountCharcoal = (item.amount/10);
 
-				var whatToCreate = ItemManager.CreateByItemID(charcoalId, amountCharcoal);
+					var whatToCreate = ItemManager.CreateByItemID(charcoalId, amountCharcoal);
 
-				if (player.inventory.GiveItem(whatToCreate))
-				{
-					player.Command("note.inv", charcoalId, amountCharcoal);
-				}
-				else
-				{
-					whatToCreate.Drop(player.GetDropPosition(), player.GetDropVelocity(), new Quaternion());
-				}
+					if (player.inventory.GiveItem(whatToCreate)) {
+						player.Command("note.inv", charcoalId, amountCharcoal);
+					} else {
+						whatToCreate.Drop(player.GetDropPosition(), player.GetDropVelocity(), new Quaternion());
+					}
+					break;
 			}
-
-			if (item.info.itemid != 94756378) return;
-			item.amount = item.amount * 2;
+			/*
+				if (item.info.itemid != 94756378) return;
+				item.amount = item.amount * 2;
+			*/
 		}
 
 		private void OnItemAddedToContainer(ItemContainer container, Item item)
@@ -577,12 +577,12 @@ namespace Oxide.Plugins
 			OnPipeShotgunUse(player, item);
 		}
 
-		private static void OnPlayerGatherTree(BasePlayer player, Item item)
+		private void OnPlayerGatherTree(BasePlayer player, Item item)
 		{
-			const int charcoalId = 1436001773;
+			const int charcoalId = -1938052175;
 			var amountCharcoal = item.amount / 10;
 
-			if (amountCharcoal < 1) return;
+			if (amountCharcoal < 1) return; // Prevent for exploit
 
 			var whatToCreate = ItemManager.CreateByItemID(charcoalId, amountCharcoal);
 
