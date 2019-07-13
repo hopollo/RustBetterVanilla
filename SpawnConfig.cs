@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Oxide.Plugins
-{
+{ 
 	[Info("SpawnConfig", "HoPollo", 2.0)]
 
 	public class SpawnConfig : RustPlugin
@@ -11,30 +11,26 @@ namespace Oxide.Plugins
 		private readonly Dictionary<string, int> _items = new Dictionary<string, int>();
 		private const float Starthealth = 100f, Startcalories = 250f, Starthydration = 125f;
 		private const int BasicInventorySlots = 24;
-		private const int BasicBeltSlots = 7;
-		public bool ForceStaffKit = true;
-		public bool DebugMode = false;
+		public bool ForceStaffKit = false;
+		public bool DebugMode = true;
 
 		private readonly List<int> _compo = new List<int>()
 		{
-				98228420,     // Gears
-				-1057402571,  // Metal Pipe
-				1939428458,   // Riffle body
-				1223860752,   // Semi autobody
-				-2092529553,  // SMG Body
-				1835797460,   // Metal spring
-				3506418,      // Rope
-				-419069863,   // sewing kits
-				-847065290,   // Roadsigns
-				3552619,	  // Tarps
+				479143914,    // Gears
+				95950017,     // Metal Pipe
+				176787552,    // Riffle body
+				573926264,    // Semi autobody
+				1230323789,   // SMG Body
+				-1021495308,  // Metal spring
+				1414245522,   // Rope
+				1234880403,   // sewing kits
+				1199391518,   // Roadsigns
+				2019042823,	  // Tarps
 		};
 
 		public void Debug(string debug)
 		{
-			if (DebugMode)
-			{
-				Puts(debug);
-			}
+			if (DebugMode) Puts(debug);
 		}
 
 		private void Loaded()
@@ -47,32 +43,22 @@ namespace Oxide.Plugins
 		{
 			GiveDefaultMetabolismValues(player);
 
-			if (ForceStaffKit)
-			{
-				if (player.IsAdmin)
-				{
-					GiveDefaultStaffKit(player);
-					return;
-				}
+			if (ForceStaffKit && player.IsAdmin) {
+				GiveDefaultStaffKit(player);
+			} else {
+				GiveInfiniteComponents(player);
 			}
-
-			GiveInfiniteComponents(player);
 		}
 
 		private void OnPlayerRespawned(BasePlayer player)
 		{
 			GiveDefaultMetabolismValues(player);
 
-			if (ForceStaffKit)
-			{
-				if (player.IsAdmin)
-				{
-					GiveDefaultStaffKit(player);
-					return;
-				}
+			if (ForceStaffKit && player.IsAdmin) {
+				GiveDefaultStaffKit(player);
+			} else {
+				GiveAutoKit(player);
 			}
-
-			GiveAutoKit(player);
 		}
 
 		private void OnPlayerDie(BasePlayer player, HitInfo info)
@@ -85,7 +71,6 @@ namespace Oxide.Plugins
 		private void OnPlayerDisconnected(BasePlayer player, string reason)
 		{
 			RemoveInfiniteComponents(player);
-			BasePlayer.activePlayerList.Remove(player);
 		}
 
 		private static void GiveDefaultMetabolismValues(BasePlayer player)
@@ -97,6 +82,7 @@ namespace Oxide.Plugins
 
 		private void OnEntitySpawned(BaseNetworkable entity)
 		{
+			Debug($"Entity Spawned : {entity}");
 			//if (!(entity as LootableCorpse)) return;
 			//var corpse = (LootableCorpse) entity;
 			//RemoveInfiniteComponentsFromCorpse(corpse);
@@ -104,25 +90,12 @@ namespace Oxide.Plugins
 
 		private void GiveInfiniteComponents(BasePlayer player)
 		{
-			Debug($"GiveInfiniteComponents : {player.inventory.containerMain.capacity} Main slots");
-
-			player.inventory.containerMain.capacity = BasicInventorySlots + _compo.Count;
-
-			Debug($"New Inv : {player.inventory.containerMain.capacity} ({BasicInventorySlots} + {_compo.Count}) added");
-
 			foreach (var compoToCreate in _compo)
 			{
 				var compoCreated = ItemManager.CreateByItemID(compoToCreate, 1000);
-				var slotToUse = BasicInventorySlots;
-
-				for (var i = 0; i < compoCreated.amount; i++)
-				{
-					compoCreated.MoveToContainer(player.inventory.containerMain, slotToUse++);
+				compoCreated.MoveToContainer(player.inventory.containerMain, player.inventory.containerMain.capacity++);
 					//player.inventory.containerMain.GetSlot(slotToUse).IsLocked();
-				}
 			}
-
-			player.inventory.SendSnapshot();
 		}
 
 		private void RemoveInfiniteComponentsFromCorpse(LootableCorpse corpse)
@@ -150,29 +123,23 @@ namespace Oxide.Plugins
 
 		private void RemoveInfiniteComponents(BasePlayer player)
 		{
-			const int mapId = 107868;
-
-			player.inventory.containerMain.capacity = BasicInventorySlots;
-
 			foreach (var componentToRemove in _compo)
 			{
 				player.inventory.Take(null, componentToRemove, player.inventory.GetAmount(componentToRemove));
 			}
-
-			player.inventory.containerBelt.Take(null, mapId, player.inventory.GetAmount(mapId));
-
-			player.inventory.SendSnapshot();
 		}
 
 		private void OnItemCraftCancelled(ItemCraftTask task)
 		{
 			//Debug("OnItemCraftCancelled works!");
-
+			
 			var player = task.owner;
+			/*
 			var container = player.inventory.containerMain;
 			var containerList = new List<Item>();
 
 			task.cancelled = true;
+			*/
 
 			timer.In(.1f, () => { RemoveInfiniteComponents(player); });
 			timer.Once(.3f, () => { GiveInfiniteComponents(player); }); // Don't work if under .1f
@@ -197,14 +164,9 @@ namespace Oxide.Plugins
 		private void GiveAutoKit(BasePlayer player)
 		{
 			//TODO : Give already reloaded bow
-
 			player.inventory.Strip();
 
-			player.inventory.containerBelt.capacity = BasicBeltSlots;
-
-			Debug($"GiveAutoKit belt : {BasicBeltSlots}");
-
-			var toAddAutokitBelt = new List<string>
+			var ItemstoAddAutokitBeltInventory = new List<string>
 			{
 				"bow.hunting",
 				"spear.wooden",
@@ -212,40 +174,18 @@ namespace Oxide.Plugins
 				"stone.pickaxe",
 				"torch",
 				"bandage",
-				 // NOT GIVING THE LAST ITEM
 			};
 
-			foreach (var beltToCreate in toAddAutokitBelt)
-			{
-				var itemsCreated = ItemManager.CreateByName(beltToCreate);
-
-				player.inventory.GiveItem(itemsCreated, player.inventory.containerBelt);
+			foreach (var item in ItemstoAddAutokitBeltInventory) {
+				player.inventory.GiveItem(ItemManager.CreateByName(item), player.inventory.containerBelt);
 			}
 
-			var toAddHidenItem = new List<Item>
-			{
-				ItemManager.CreateByName("map"),
-			};
-
-			player.inventory.containerBelt.capacity += toAddHidenItem.Count;
-				toAddHidenItem[0].MoveToContainer(player.inventory.containerBelt, -1, false);
-					player.inventory.containerBelt.capacity -= toAddHidenItem.Count;
-			//player.inventory.containerBelt.GetSlot(7).IsLocked();
-
-			var toAddAutokitMain = new List<Item>
-			{
+			var ItemstoAddAutokitMainInventory = new List<Item> {
 				ItemManager.CreateByName("arrow.wooden", 26),
 			};
-
-			toAddAutokitMain[0].MoveToContainer(player.inventory.containerMain);
-
-			//player.inventory.containerWear.SetFlag(ItemContainer.Flag.IsLocked, false);
-			//player.inventory.containerBelt.SetFlag(ItemContainer.Flag.IsLocked, false);
-
-			//player.inventory.containerBelt.capacity -= 1;
-
-			player.inventory.SendSnapshot();
-
+			
+			ItemstoAddAutokitMainInventory[0].MoveToContainer(player.inventory.containerMain);
+			
 			GiveInfiniteComponents(player);
 		}
 	}
